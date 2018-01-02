@@ -13,5 +13,5 @@ setup(
             "sphinx-websequencediagrams = sphinx_wsd"
         ],
     },
-    py_modules=["sphinx_wsd"]
+    py_modules=["sphinx_websequencediagrams"]
 )
