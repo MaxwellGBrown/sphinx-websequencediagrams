@@ -1,4 +1,5 @@
 """Module for connecting to sphinx."""
+import os
 import os.path
 import re
 import urllib
@@ -6,7 +7,7 @@ import urllib
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from sphinx.util import logging
-
+from sphinx.util.osutil import ensuredir
 
 log = logging.getLogger(__name__)
 
@@ -63,7 +64,9 @@ class SequenceDiagramDirective(Directive):
         # TODO Read directive attributes for alt
         node["alt"] = target_id
         # Create a future URI for the eventual sequencediagram
-        node["uri"] = os.path.join(env.app.builder.outdir, "_static", target_id)  # noqa
+        filename = "{}.png".format(target_id)
+        node["uri"] = os.path.join(env.app.builder.outdir, env.app.builder.imagedir, filename)  # noqa
+        log.info("node['uri']", node["uri"])
 
         return [target_node, node]
 
@@ -75,12 +78,14 @@ def purge_sequencediagrams(app, env, docname):
 
 def process_sequencediagram_nodes(app, doctree, fromdocname):
     """Extra processing on collected sequencediagram nodes."""
+    # Ensure the images directory exists before we start writing to it
+    ensuredir(os.path.join(app.builder.outdir, app.builder.imagedir))
+
     for node in doctree.traverse(sequencediagram):
         log.info("Processing %s", node["alt"])
         # hit www.websequencediagrams.com to create an image
         # https://www.websequencediagrams.com/embedding.html#python
-        image_path = os.path.join(app.builder.outdir, "_static", node["alt"])
-        with open(image_path, "w") as image_file:
+        with open(node["uri"], "w") as image_file:
             request = {
                 "message": node.sequence_text,
                 # TODO Make "style" configurable via node &/or settings
