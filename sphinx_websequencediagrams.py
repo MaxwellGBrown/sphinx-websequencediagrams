@@ -49,6 +49,8 @@ class SequenceDiagramDirective(Directive):
         target_node = nodes.target("", "", ids=[target_id])  # WTF is this?
 
         # TODO Make a sequence diagram image?
+        target_node["src"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
+        target_node["alt"] = "sequencediagram"
 
         return [target_node]
 
