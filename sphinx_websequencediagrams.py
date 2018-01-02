@@ -65,8 +65,8 @@ class SequenceDiagramDirective(Directive):
         node["alt"] = target_id
         # Create a future URI for the eventual sequencediagram
         filename = "{}.png".format(target_id)
-        node["uri"] = os.path.join(env.app.builder.outdir, env.app.builder.imagedir, filename)  # noqa
-        log.info("node['uri']", node["uri"])
+        node["uri"] = os.path.join("/", env.app.builder.outdir, env.app.builder.imagedir, filename)  # noqa
+        log.info("node['uri']: %s", node["uri"])
 
         return [target_node, node]
 
