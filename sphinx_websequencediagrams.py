@@ -94,7 +94,7 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
                 "appVersion": "1"
             }
 
-            url = urllib.parse.urlencode(request)
+            url = urllib.parse.urlencode(request).encode()
             with urllib.request.urlopen("http://websequencediagrams.com/", url) as raw_response:  # noqa
                 response = raw_response.readline()
                 log.info(response)
