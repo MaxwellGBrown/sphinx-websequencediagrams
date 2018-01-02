@@ -41,18 +41,18 @@ class SequenceDiagramDirective(Directive):
         """Process an RST sequencediagram directive and return it's nodes."""
         env = self.state.document.settings.env
 
-        # Get a new id for our sequencediagram node
+        # Create a "target_node" so we can link to this sequencediagram
         target_id = "sequencediagram-{}".format(
             env.new_serialno("sequencediagram")
         )
-        # Instantiate the "target node" w/ no text
-        target_node = nodes.target("", "", ids=[target_id])  # WTF is this?
+        target_node = nodes.target("", "", ids=[target_id])
 
-        # TODO Make a sequence diagram image?
-        target_node["src"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
-        target_node["alt"] = "sequencediagram"
+        # TODO Make a sequence diagram image using www.websequenceiagrams.com
+        node = sequencediagram()
+        node["src"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
+        node["alt"] = "sequencediagram"
 
-        return [target_node]
+        return [target_node, node]
 
 
 def purge_sequencediagrams(app, env, docname):
