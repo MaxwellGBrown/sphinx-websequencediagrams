@@ -113,6 +113,10 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
             with open("/" + node["uri"], "wb") as image_file:
                 shutil.copyfileobj(connection, image_file)
 
+        # reassign the node uri with a relative value
+        log.info("Reassigning uri from %s to %s", node["uri"], app.builder.get_target_uri(node["uri"]))  # noqa
+        node["uri"] = app.builder.get_target_uri(node["uri"])
+
 
 def setup(app):
     """Add the sequencediagram directive to Sphinx."""
