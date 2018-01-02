@@ -100,7 +100,7 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
             response = connection.read()
             log.info(response)
 
-        expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
+        expression = re.compile(b"(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
         image_path = expression.search(response)
 
         if image_path is None:
@@ -108,9 +108,9 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
             continue  # Skip this one, the URL is busted :(
 
         # retrieve the newly created image from www.websequencediagrams.com
-        image_url = "http://www.websequencediagrams.com" + image_path
+        image_url = "http://www.websequencediagrams.com" + image_path.decode()
         with urllib.request.urlopen(image_url) as connection:
-            with open("/" + node["uri"], "w") as image_file:
+            with open("/" + node["uri"], "wb") as image_file:
                 shutil.copyfileobj(connection, image_file)
 
 
