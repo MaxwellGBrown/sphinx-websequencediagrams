@@ -82,10 +82,10 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
     ensuredir(os.path.join(app.builder.outdir, app.builder.imagedir))
 
     for node in doctree.traverse(sequencediagram):
-        log.info("Processing %s", node["alt"])
+        log.info("Processing %s", node["uri"])
         # hit www.websequencediagrams.com to create an image
         # https://www.websequencediagrams.com/embedding.html#python
-        with open(node["uri"], "w") as image_file:
+        with open("/" + node["uri"], "w") as image_file:
             request = {
                 "message": node.sequence_text,
                 # TODO Make "style" configurable via node &/or settings
