@@ -60,9 +60,10 @@ class SequenceDiagramDirective(Directive):
 
         # Create a sequence diagarm w/ the text in the directive
         node = sequencediagram("\n".join(self.content))
-        # node["uri"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
         # TODO Read directive attributes for alt
         node["alt"] = target_id
+        # Create a future URI for the eventual sequencediagram
+        node["uri"] = os.path.join(env.app.builder.outdir, "_static", target_id)  # noqa
 
         return [target_node, node]
 
@@ -98,8 +99,6 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
                 log.warning("Could not build sequence diagram %s", node["alt"])
 
             image_file.write(message)
-
-        node["uri"] = app.builder.get_relative_uri("_static", node["alt"])
 
 
 def setup(app):
