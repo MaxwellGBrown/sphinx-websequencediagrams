@@ -49,6 +49,7 @@ class SequenceDiagramDirective(Directive):
 
         # TODO Make a sequence diagram image using www.websequenceiagrams.com
         node = sequencediagram()
+        node["uri"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
         node["src"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
         node["alt"] = "sequencediagram"
 
