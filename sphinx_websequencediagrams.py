@@ -1,7 +1,6 @@
 """Module for connecting to sphinx."""
-import os
+import json
 import os.path
-import re
 import shutil
 import urllib.request
 import urllib.parse
@@ -97,11 +96,10 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
         # Hit www.websequencediagrams.com API to create image
         url = urllib.parse.urlencode(request).encode()
         with urllib.request.urlopen("http://www.websequencediagrams.com/", url) as connection:  # noqa
-            response = connection.read()
+            response = json.loads(connection.read().decode())
             log.info(response)
 
-        expression = re.compile(b"(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
-        image_path = expression.search(response)
+        image_path = response.get("img")
 
         if image_path is None:
             log.warning("Could not build sequence diagram %s", node["uri"])
