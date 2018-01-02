@@ -2,6 +2,7 @@
 import os
 import os.path
 import re
+import shutil
 import urllib.request
 import urllib.parse
 
@@ -84,28 +85,33 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
 
     for node in doctree.traverse(sequencediagram):
         log.info("Processing %s", node["uri"])
-        # hit www.websequencediagrams.com to create an image
-        # https://www.websequencediagrams.com/embedding.html#python
-        with open("/" + node["uri"], "w") as image_file:
-            request = {
-                "message": node.sequence_text,
-                # TODO Make "style" configurable via node &/or settings
-                "style": "default",
-                "appVersion": "1"
-            }
+        request = {
+            "message": node.sequence_text,
+            # TODO Make "style" configurable via node &/or settings
+            "style": "default",
+            "appVersion": "1",
+            # TODO "format" should be handled by SequenceDiagramDirective
+            "format": "png",
+        }
 
-            url = urllib.parse.urlencode(request).encode()
-            with urllib.request.urlopen("http://websequencediagrams.com/", url) as raw_response:  # noqa
-                response = raw_response.readline()
-                log.info(response)
+        # Hit www.websequencediagrams.com API to create image
+        url = urllib.parse.urlencode(request).encode()
+        with urllib.request.urlopen("http://www.websequencediagrams.com/", url) as connection:  # noqa
+            response = connection.read()
+            log.info(response)
 
-            expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
-            message = expression.search(response)
+        expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
+        image_path = expression.search(response)
 
-            if message is None:
-                log.warning("Could not build sequence diagram %s", node["alt"])
+        if image_path is None:
+            log.warning("Could not build sequence diagram %s", node["uri"])
+            continue  # Skip this one, the URL is busted :(
 
-            image_file.write(message)
+        # retrieve the newly created image from www.websequencediagrams.com
+        image_url = "http://www.websequencediagrams.com" + image_path
+        with urllib.request.urlopen(image_url) as connection:
+            with open("/" + node["uri"], "w") as image_file:
+                shutil.copyfileobj(connection, image_file)
 
 
 def setup(app):
