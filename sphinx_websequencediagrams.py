@@ -114,8 +114,8 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
                 shutil.copyfileobj(connection, image_file)
 
         # reassign the node uri with a relative value
-        log.info("Reassigning uri from %s to %s", node["uri"], app.builder.get_target_uri(node["uri"]))  # noqa
-        node["uri"] = app.builder.get_target_uri(node["uri"])
+        log.info("Reassigning uri from %s to %s", node["uri"], os.path.relpath("/" + node["uri"], app.builder.outdir))  # noqa
+        node["uri"] = os.path.relpath("/" + node["uri"], app.builder.outdir)
 
 
 def setup(app):
