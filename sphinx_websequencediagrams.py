@@ -1,12 +1,23 @@
 """Module for connecting to sphinx."""
+import os.path
+import re
+import urllib
+
 from docutils import nodes
 from docutils.parsers.rst import Directive
+from sphinx.util import logging
+
+
+log = logging.getLogger(__name__)
 
 
 class sequencediagram(nodes.image):
     """Node class for sequencediagram directive."""
 
-    pass
+    def __init__(self, content):
+        """Save content & then instantiate nodes.image."""
+        self.sequence_text = content
+        super().__init__()
 
 
 def visit_sequencediagram_node(self, node):
@@ -47,11 +58,11 @@ class SequenceDiagramDirective(Directive):
         )
         target_node = nodes.target("", "", ids=[target_id])
 
-        # TODO Make a sequence diagram image using www.websequenceiagrams.com
-        node = sequencediagram()
-        node["uri"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
-        node["src"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
-        node["alt"] = "sequencediagram"
+        # Create a sequence diagarm w/ the text in the directive
+        node = sequencediagram("\n".join(self.content))
+        # node["uri"] = "https://vignette.wikia.nocookie.net/seinfeld/images/7/76/George-costanza.jpg/revision/latest?cb=20110406222711" # noqa
+        # TODO Read directive attributes for alt
+        node["alt"] = target_id
 
         return [target_node, node]
 
@@ -63,7 +74,32 @@ def purge_sequencediagrams(app, env, docname):
 
 def process_sequencediagram_nodes(app, doctree, fromdocname):
     """Extra processing on collected sequencediagram nodes."""
-    pass
+    for node in doctree.traverse(sequencediagram):
+        log.info("Processing %s", node["alt"])
+        # hit www.websequencediagrams.com to create an image
+        # https://www.websequencediagrams.com/embedding.html#python
+        image_path = os.path.join(app.builder.outdir, "_static", node["alt"])
+        with open(image_path, "w") as image_file:
+            request = {
+                "message": node.sequence_text,
+                # TODO Make "style" configurable via node &/or settings
+                "style": "default",
+                "appVersion": "1"
+            }
+
+            url = urllib.urlencode(request)
+            with urllib.urlopen("http://websequencediagrams.com/", url) as f:
+                response = f.readline()
+
+            expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
+            message = expression.search(response)
+
+            if message is None:
+                log.warning("Could not build sequence diagram %s", node["alt"])
+
+            image_file.write(message)
+
+        node["uri"] = app.builder.get_relative_uri("_static", node["alt"])
 
 
 def setup(app):
