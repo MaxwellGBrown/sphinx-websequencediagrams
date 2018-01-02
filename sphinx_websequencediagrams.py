@@ -2,7 +2,8 @@
 import os
 import os.path
 import re
-import urllib
+import urllib.request
+import urllib.parse
 
 from docutils import nodes
 from docutils.parsers.rst import Directive
@@ -93,9 +94,10 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
                 "appVersion": "1"
             }
 
-            url = urllib.urlencode(request)
-            with urllib.urlopen("http://websequencediagrams.com/", url) as f:
-                response = f.readline()
+            url = urllib.parse.urlencode(request)
+            with urllib.request.urlopen("http://websequencediagrams.com/", url) as raw_response:  # noqa
+                response = raw_response.readline()
+                log.info(response)
 
             expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
             message = expression.search(response)
