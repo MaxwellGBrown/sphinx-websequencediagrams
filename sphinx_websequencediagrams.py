@@ -1,7 +1,6 @@
 """Module for connecting to sphinx."""
 import os
 import os.path
-import re
 import shutil
 import urllib.request
 import urllib.parse
@@ -12,6 +11,50 @@ from sphinx.util import logging
 from sphinx.util.osutil import ensuredir
 
 log = logging.getLogger(__name__)
+
+
+class WebSequenceDiagram(object):
+    """Manages interaction with WebSequenceDiagrams."""
+
+    api_url = "http://www.websequencediagrams.com/"
+
+    class WebSequenceDiagramError(Exception):
+        """Exception for any errors returned by www.websequencediagrams.com."""
+
+        pass
+
+    def __init__(self, message, **kwargs):
+        """Send message to websequencediagram.com."""
+        self.request_body = {"message": message, **kwargs}
+        self.request_body.setdefault("style", "default")
+        self.request_body.setdefault("format", "png")
+        self.request_body.setdefault("appVersion", "1")
+        # TODO The application sets this in request; do we mess w/ this too?
+        # self.request_body.setdefault("width", 1000)
+
+        self._context = None
+
+    def create_diagram(self):
+        """Create diagram via websequencediagram.com. Returns diagram URL."""
+        body = urllib.parse.urlencode(self.request_body).encode()
+        with urllib.request.urlopen(self.api_url, body) as connection:
+            response_body = connection.read().decode()
+
+        response = urllib.parse.parse_qs(response_body)
+
+        if response.get("errors"):
+            raise self.WebSequenceDiagramError(response["errors"])
+
+        return urllib.parse.urljoin(self.api_url, response["img"])
+
+    def __enter__(self):
+        """Create and operate on a diagram as a file-like object."""
+        image_url = self.create_diagram()
+        return urllib.request.urlopen(image_url)
+
+    def __exit__(self, *args):
+        """Close any open URL connections made for retrieving diagrams."""
+        return  # the responses from urllib.request.urlopen close themselves
 
 
 class sequencediagram(nodes.image):
@@ -56,6 +99,7 @@ class SequenceDiagramDirective(Directive):
         env = self.state.document.settings.env
 
         # Create a "target_node" so we can link to this sequencediagram
+        # TODO Read directive attributes for name/title/id
         target_id = "sequencediagram-{}".format(
             env.new_serialno("sequencediagram")
         )
@@ -64,6 +108,9 @@ class SequenceDiagramDirective(Directive):
         # Create a sequence diagarm w/ the text in the directive
         node = sequencediagram("\n".join(self.content))
         # TODO Read directive attributes for alt
+        # TODO Read directive attributes for style
+        # TODO Read directive attributes for format
+        # TODO Read directive attributes for a file to get content from
         node["alt"] = target_id
         # Create a future URI for the eventual sequencediagram
         filename = "{}.png".format(target_id)
@@ -79,39 +126,18 @@ def purge_sequencediagrams(app, env, docname):
 
 
 def process_sequencediagram_nodes(app, doctree, fromdocname):
-    """Extra processing on collected sequencediagram nodes."""
+    """Extra processing on sequencediagram nodes after all nodes are created.
+
+    This is the point in which we can do the web requests, copy the images
+    into the build, & reassociate the URI with the build file.
+    """
     # Ensure the images directory exists before we start writing to it
     ensuredir(os.path.join(app.builder.outdir, app.builder.imagedir))
 
     for node in doctree.traverse(sequencediagram):
-        log.info("Processing %s", node["uri"])
-        request = {
-            "message": node.sequence_text,
-            # TODO Make "style" configurable via node &/or settings
-            "style": "default",
-            "appVersion": "1",
-            # TODO "format" should be handled by SequenceDiagramDirective
-            "format": "png",
-        }
-
-        # Hit www.websequencediagrams.com API to create image
-        url = urllib.parse.urlencode(request).encode()
-        with urllib.request.urlopen("http://www.websequencediagrams.com/", url) as connection:  # noqa
-            response = connection.read().decode()
-            log.info(response)
-
-        expression = re.compile("(\?(img|pdf|png|svg)=[a-zA-Z0-9]+)")
-        image_path = expression.search(response).group(0)
-
-        if image_path is None:
-            log.warning("Could not build sequence diagram %s", node["uri"])
-            continue  # Skip this one, the URL is busted :(
-
-        # retrieve the newly created image from www.websequencediagrams.com
-        image_url = "http://www.websequencediagrams.com" + image_path
-        with urllib.request.urlopen(image_url) as connection:
+        with WebSequenceDiagram(node.sequence_text) as diagram_file:
             with open("/" + node["uri"], "wb") as image_file:
-                shutil.copyfileobj(connection, image_file)
+                shutil.copyfileobj(diagram_file, image_file)
 
         # reassign the node uri with a relative value
         log.info("Reassigning uri from %s to %s", node["uri"], os.path.relpath("/" + node["uri"], app.builder.outdir))  # noqa
