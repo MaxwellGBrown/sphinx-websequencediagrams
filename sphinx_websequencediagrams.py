@@ -2,7 +2,6 @@
 import os
 import os.path
 import shutil
-import tempfile
 import urllib.request
 import urllib.parse
 
@@ -10,7 +9,6 @@ import demjson
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from sphinx.util import logging
-from sphinx.util.osutil import ensuredir
 
 
 log = logging.getLogger(__name__)
@@ -62,7 +60,7 @@ class WebSequenceDiagram(object):
 
 
 class sequencediagram(nodes.image):
-    """Node class for sequencediagram directive."""
+    """Node class for sequencediagram directive that inherits from image."""
 
     pass
 
@@ -116,41 +114,34 @@ class SequenceDiagramDirective(Directive):
             # TODO Read directive attributes for style
             # TODO Read directive attributes for format
         }
-        with WebSequenceDiagram(sequence_diagram_text, **options) as diagram:
-            # TODO Have suffix be set by whatever is determining the filetype
-            temp_diagram = tempfile.NamedTemporaryFile("wb", suffix=".png",
-                                                       delete=False)
-            shutil.copyfileobj(diagram, temp_diagram)
-            node['uri'] = temp_diagram.name
 
+        # TODO Have suffix be set by whatever is determining the filetype
+        source_filename = "{}.png".format(target_id)
+        source_filepath = os.path.join(env.app.srcdir, "_static", source_filename)  # noqa
+
+        with WebSequenceDiagram(sequence_diagram_text, **options) as diagram:
+            with open(source_filepath, "wb") as source_diagram:
+                shutil.copyfileobj(diagram, source_diagram)
+
+        # Create/Update env.source_diagrams for cleanup later
+        source_diagrams = getattr(env, "source_diagrams", list())
+        source_diagrams.append(source_filepath)
+        env.source_diagrams = source_diagrams
+
+        node['uri'] = os.path.relpath(source_filepath, env.app.srcdir)
         node["alt"] = target_id
         log.info("node['uri']: %s", node["uri"])
         return [target_node, node]
 
 
 def purge_sequencediagrams(app, env, docname):
-    """Clear any data in the environment persistant env."""
+    """Clear any data in the environment persistant env related to docname."""
     pass
 
 
 def process_sequencediagram_nodes(app, doctree, fromdocname):
-    """Extra processing on sequencediagram nodes after all nodes are created.
-
-    This is the point in which we can do the web requests, copy the images
-    into the build, & reassociate the URI with the build file.
-    """
-    # Ensure the images directory exists before we start writing to it
-    imagedir_path = os.path.join(app.builder.outdir, app.builder.imagedir)
-    ensuredir(imagedir_path)
-
-    for node in doctree.traverse(sequencediagram):
-        # Move diagram's temporary file to the build
-        filename = os.path.basename(node["uri"])
-        build_uri = os.path.join(imagedir_path, filename)
-
-        log.info("Moving diagram from %s to %s", node["uri"], build_uri)
-        shutil.move("/" + node["uri"], build_uri)  # leading slash was removed
-        node["uri"] = build_uri
+    """Extra sequencediagram node processing after all nodes are created."""
+    pass
 
 
 def setup(app):
