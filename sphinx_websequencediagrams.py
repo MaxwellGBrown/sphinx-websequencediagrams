@@ -2,6 +2,7 @@
 import os
 import os.path
 import shutil
+import tempfile
 import urllib.request
 import urllib.parse
 
@@ -60,10 +61,7 @@ class WebSequenceDiagram(object):
 class sequencediagram(nodes.image):
     """Node class for sequencediagram directive."""
 
-    def __init__(self, content):
-        """Save content & then instantiate nodes.image."""
-        self.sequence_text = content
-        super().__init__()
+    pass
 
 
 def visit_sequencediagram_node(self, node):
@@ -106,17 +104,24 @@ class SequenceDiagramDirective(Directive):
         target_node = nodes.target("", "", ids=[target_id])
 
         # Create a sequence diagarm w/ the text in the directive
-        node = sequencediagram("\n".join(self.content))
-        # TODO Read directive attributes for alt
-        # TODO Read directive attributes for style
-        # TODO Read directive attributes for format
         # TODO Read directive attributes for a file to get content from
-        node["alt"] = target_id
-        # Create a future URI for the eventual sequencediagram
-        filename = "{}.png".format(target_id)
-        node["uri"] = os.path.join("/", env.app.builder.outdir, env.app.builder.imagedir, filename)  # noqa
-        log.info("node['uri']: %s", node["uri"])
+        sequence_diagram_text = "\n".join(self.content)
 
+        node = sequencediagram()
+        options = {
+            # TODO Read directive attributes for alt
+            # TODO Read directive attributes for style
+            # TODO Read directive attributes for format
+        }
+        with WebSequenceDiagram(sequence_diagram_text, **options) as diagram:
+            # TODO Have suffix be set by whatever is determining the filetype
+            temp_diagram = tempfile.NamedTemporaryFile("wb", suffix="png",
+                                                       delete=False)
+            shutil.copyfileobj(diagram, temp_diagram)
+            node['uri'] = temp_diagram.name
+
+        node["alt"] = target_id
+        log.info("node['uri']: %s", node["uri"])
         return [target_node, node]
 
 
@@ -135,13 +140,11 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
     ensuredir(os.path.join(app.builder.outdir, app.builder.imagedir))
 
     for node in doctree.traverse(sequencediagram):
-        with WebSequenceDiagram(node.sequence_text) as diagram_file:
-            with open("/" + node["uri"], "wb") as image_file:
-                shutil.copyfileobj(diagram_file, image_file)
-
-        # reassign the node uri with a relative value
-        log.info("Reassigning uri from %s to %s", node["uri"], os.path.relpath("/" + node["uri"], app.builder.outdir))  # noqa
-        node["uri"] = os.path.relpath("/" + node["uri"], app.builder.outdir)
+        # Move diagram's temporary file to the build
+        filename = os.path.basename(node["uri"])
+        build_uri = os.path.join(app.builder.imagedir, filename)
+        log.info("Moving diagram from %s to %s", node["uri"], build_uri)
+        shutil.move(node["uri"], build_uri)
 
 
 def setup(app):
