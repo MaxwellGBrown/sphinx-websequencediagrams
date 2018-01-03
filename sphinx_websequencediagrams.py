@@ -6,10 +6,12 @@ import tempfile
 import urllib.request
 import urllib.parse
 
+import demjson
 from docutils import nodes
 from docutils.parsers.rst import Directive
 from sphinx.util import logging
 from sphinx.util.osutil import ensuredir
+
 
 log = logging.getLogger(__name__)
 
@@ -38,10 +40,11 @@ class WebSequenceDiagram(object):
     def create_diagram(self):
         """Create diagram via websequencediagram.com. Returns diagram URL."""
         body = urllib.parse.urlencode(self.request_body).encode()
-        with urllib.request.urlopen(self.api_url, body) as connection:
-            response_body = connection.read().decode()
+        with urllib.request.urlopen(self.api_url, body) as response_io:
+            response_body = response_io.read().decode()
 
-        response = urllib.parse.parse_qs(response_body)
+        # The response is a JavaScript object instead of a JSON object
+        response = demjson.decode(response_body)
 
         if response.get("errors"):
             raise self.WebSequenceDiagramError(response["errors"])
@@ -115,7 +118,7 @@ class SequenceDiagramDirective(Directive):
         }
         with WebSequenceDiagram(sequence_diagram_text, **options) as diagram:
             # TODO Have suffix be set by whatever is determining the filetype
-            temp_diagram = tempfile.NamedTemporaryFile("wb", suffix="png",
+            temp_diagram = tempfile.NamedTemporaryFile("wb", suffix=".png",
                                                        delete=False)
             shutil.copyfileobj(diagram, temp_diagram)
             node['uri'] = temp_diagram.name
@@ -137,14 +140,17 @@ def process_sequencediagram_nodes(app, doctree, fromdocname):
     into the build, & reassociate the URI with the build file.
     """
     # Ensure the images directory exists before we start writing to it
-    ensuredir(os.path.join(app.builder.outdir, app.builder.imagedir))
+    imagedir_path = os.path.join(app.builder.outdir, app.builder.imagedir)
+    ensuredir(imagedir_path)
 
     for node in doctree.traverse(sequencediagram):
         # Move diagram's temporary file to the build
         filename = os.path.basename(node["uri"])
-        build_uri = os.path.join(app.builder.imagedir, filename)
+        build_uri = os.path.join(imagedir_path, filename)
+
         log.info("Moving diagram from %s to %s", node["uri"], build_uri)
-        shutil.move(node["uri"], build_uri)
+        shutil.move("/" + node["uri"], build_uri)  # leading slash was removed
+        node["uri"] = build_uri
 
 
 def setup(app):

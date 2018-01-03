@@ -2,7 +2,10 @@
 
 from setuptools import setup
 
-install_requires = ["Sphinx==1.6.5"]
+install_requires = [
+    "demjson==2.2.4",
+    "Sphinx==1.6.5",
+]
 tests_require = install_requires + ["pytest==3.3.1"]
 
 setup(
