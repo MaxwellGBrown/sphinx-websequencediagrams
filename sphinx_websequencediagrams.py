@@ -8,6 +8,7 @@ import urllib.parse
 import demjson
 from docutils import nodes
 from docutils.parsers.rst import Directive
+from docutils.parsers.rst import directives
 from sphinx.util import logging
 
 
@@ -93,8 +94,23 @@ class SequenceDiagramDirective(Directive):
     # this enables content in the directive (wtf does that mean?)
     has_content = True
 
+    option_spec = {
+        "file": directives.path,
+        # TODO Discover the other style names
+        "style": lambda x: directives.choice(x, ("default", "forest")),
+        "format": lambda x: directives.choice(x, ("png", "svg", "pdf")),
+        "alt": str,
+    }
+
+    default_options = {
+        "style": "default",
+        "format": "png",
+    }
+
     def run(self):
         """Process an RST sequencediagram directive and return it's nodes."""
+        self.options = {**self.default_options, **self.options}
+
         env = self.state.document.settings.env
 
         # Create a "target_node" so we can link to this sequencediagram
@@ -105,23 +121,19 @@ class SequenceDiagramDirective(Directive):
         target_node = nodes.target("", "", ids=[target_id])
 
         # Create a sequence diagarm w/ the text in the directive
-        # TODO Read directive attributes for a file to get content from
-        sequence_diagram_text = "\n".join(self.content)
+        if "file" in self.options:
+            text_diagram = ""  # TODO Read sequence diagram from file
+        else:
+            text_diagram = "\n".join(self.content)
 
         node = sequencediagram()
-        options = {
-            # TODO Read directive attributes for alt
-            # TODO Read directive attributes for style
-            # TODO Read directive attributes for format
-        }
 
-        # TODO Have suffix be set by whatever is determining the filetype
-        source_filename = "{}.png".format(target_id)
-        source_filepath = os.path.join(env.app.srcdir, "_static", source_filename)  # noqa
+        filename = "{}.{}".format(target_id, self.options["format"])
+        source_filepath = os.path.join(env.app.srcdir, "_static", filename)
 
-        with WebSequenceDiagram(sequence_diagram_text, **options) as diagram:
+        with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
             with open(source_filepath, "wb") as source_diagram:
-                shutil.copyfileobj(diagram, source_diagram)
+                shutil.copyfileobj(http_diagram, source_diagram)
 
         # Create/Update env.source_diagrams for cleanup later
         source_diagrams = getattr(env, "source_diagrams", list())
@@ -129,7 +141,7 @@ class SequenceDiagramDirective(Directive):
         env.source_diagrams = source_diagrams
 
         node['uri'] = os.path.relpath(source_filepath, env.app.srcdir)
-        node["alt"] = target_id
+        node["alt"] = self.options.get("alt", target_id)
         log.info("node['uri']: %s", node["uri"])
         return [target_node, node]
 
