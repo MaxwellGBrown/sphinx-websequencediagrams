@@ -122,7 +122,13 @@ class SequenceDiagramDirective(Directive):
 
         # Create a sequence diagarm w/ the text in the directive
         if "file" in self.options:
-            text_diagram = ""  # TODO Read sequence diagram from file
+            try:
+                with open(self.options["file"], 'r') as sequence_diagram_file:
+                    text_diagram = sequence_diagram_file.read()
+            except FileNotFoundError:
+                log.error("Could not read Sequence Diagram from file %s",
+                          self.options["file"])
+                return []
         else:
             text_diagram = "\n".join(self.content)
 
