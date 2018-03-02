@@ -1,7 +1,7 @@
 sphinx-websequencediagrams
 ==========================
 
-A Sphinx Directive for creating Sequence Diagrams using `www.websequencediagrams.com <www.websequencediagrams.com>`__.
+A Sphinx Directive for creating Sequence Diagrams using www.websequencediagrams.com.
 
 Setup
 -----
