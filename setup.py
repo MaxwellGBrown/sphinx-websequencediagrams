@@ -10,7 +10,7 @@ tests_require = install_requires + ["pytest==3.3.1"]
 
 setup(
     name="sphinx-websequencediagrams",
-    version="0.0",
+    version="0.1",
     license="MIT",
     url="https://github.com/MaxwellGBrown/sphinx-websequencediagrams",
     install_requires=install_requires,
