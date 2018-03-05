@@ -4,6 +4,7 @@ import os.path
 import shutil
 import urllib.request
 import urllib.parse
+import uuid
 
 import demjson
 from docutils import nodes
@@ -114,10 +115,8 @@ class SequenceDiagramDirective(Directive):
         env = self.state.document.settings.env
 
         # Create a "target_node" so we can link to this sequencediagram
-        # TODO Read directive attributes for name/title/id
-        target_id = "sequencediagram-{}".format(
-            env.new_serialno("sequencediagram")
-        )
+        # TODO Meaningful & reproducable filenames
+        target_id = "sequencediagram-{}".format(uuid.uuid4())
         target_node = nodes.target("", "", ids=[target_id])
 
         # Create a sequence diagarm w/ the text in the directive
