@@ -147,7 +147,6 @@ class SequenceDiagramDirective(Directive):
 
         node['uri'] = os.path.relpath(source_filepath, env.app.srcdir)
         node["alt"] = self.options.get("alt", target_id)
-        log.info("node['uri']: %s", node["uri"])
         return [target_node, node]
 
 
