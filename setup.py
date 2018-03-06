@@ -2,6 +2,8 @@
 
 from setuptools import setup
 
+from __version__ import __version__ as version
+
 install_requires = [
     "demjson==2.2.4",
 ]
@@ -12,7 +14,7 @@ tests_require = install_requires + [
 
 setup(
     name="sphinx-websequencediagrams",
-    version="0.2",
+    version=version,
     license="MIT",
     url="https://github.com/MaxwellGBrown/sphinx-websequencediagrams",
     description="Sphinx extension that integrates www.websequencediagrams.com",
