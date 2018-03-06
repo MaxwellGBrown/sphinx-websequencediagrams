@@ -12,8 +12,6 @@ from docutils.parsers.rst import directives
 from sphinx.util import logging
 from sphinx.util.osutil import ensuredir
 
-from __version__ import __version__ as version
-
 
 log = logging.getLogger(__name__)
 
@@ -192,4 +190,4 @@ def setup(app):
         html=(visit_sequencediagram_node, depart_sequencediagram_node),
     )
 
-    return {'version': version}  # Identify version of the extension in return
+    return {'version': '0.0'}  # Identify version of the extension in return
