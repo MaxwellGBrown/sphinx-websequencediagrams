@@ -6,6 +6,7 @@ install_requires = [
     "demjson==2.2.4",
 ]
 tests_require = install_requires + [
+    "beautifulsoup4==4.6.1",
     "pytest==3.3.1",
     "Sphinx==1.6.5",
 ]
