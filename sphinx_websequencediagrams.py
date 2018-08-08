@@ -98,8 +98,9 @@ class SequenceDiagramDirective(Directive):
 
         # Create a sequence diagarm w/ the text in the directive
         if "file" in self.options:
+            source_filepath = os.path.join(env.srcdir, self.options["file"])
             try:
-                with open(self.options["file"], 'r') as sequence_diagram_file:
+                with open(source_filepath, 'r') as sequence_diagram_file:
                     text_diagram = sequence_diagram_file.read()
             except FileNotFoundError:
                 log.error("Could not read Sequence Diagram from file %s",

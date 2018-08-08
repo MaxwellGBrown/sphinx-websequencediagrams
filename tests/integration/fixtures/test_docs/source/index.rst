@@ -12,4 +12,4 @@
 
 
 .. sequencediagram::
-   :file: source/sequence_diagram.txt
+   :file: sequence_diagram.txt
