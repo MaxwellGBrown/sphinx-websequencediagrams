@@ -1,0 +1,36 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/python:3.6.1
+      
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+
+      - run:
+          name: create virtualenv
+          command: |
+            python3 -m venv venv
+       
+      - run:
+          name: pycodestyle
+          command: |
+            . venv/bin/activate
+            pip install pycodestyle
+            pycodestyle sphinx_websequencediagrams.py
+
+      - run:
+          name: pydocstyle
+          command: |
+            . venv/bin/activate
+            pip install pydocstyle
+            pydocstyle sphinx_websequencediagrams.py
+
+      - run:
+          name: python setup.py test
+          command: |
+            . venv/bin/activate
+            python setup.py test
+
