@@ -9,27 +9,8 @@ jobs:
     steps:
       - checkout
 
-      # Download and cache dependencies
-      - restore_cache:
-          keys:
-          - v1-dependencies-{{ checksum "setup.py" }}
-          # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-
-      - run:
-          name: create virtualenv
-          command: |
-            python3 -m venv venv
-
-      - save_cache:
-          paths:
-            - ./venv
-          key: v1-dependencies-{{ checksum "setup.py" }}
-        
       # TODO Add linting
 
       - run:
           name: run tests
-          command: |
-            . venv/bin/activate
-            python setup.py test
+          command: python setup.py test
