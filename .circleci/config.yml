@@ -9,8 +9,19 @@ jobs:
     steps:
       - checkout
 
-      # TODO Add linting
+      - run:
+          name: pycodestyle
+          command: |
+            pip install pycodestyle
+            pycodestyle sphinx_websequencediagrams.py
 
       - run:
-          name: run tests
+          name: pydocstyle
+          command: |
+            pip install pydocstyle
+            pydocstyle sphinx_websequencediagrams.py
+
+      - run:
+          name: python setup.py test
           command: python setup.py test
+
