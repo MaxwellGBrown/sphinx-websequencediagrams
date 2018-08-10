@@ -40,7 +40,7 @@ class WebSequenceDiagram(object):
         self.request_body.setdefault("style", "default")
         self.request_body.setdefault("format", "png")
         self.request_body.setdefault("appVersion", "1")
-        # TODO The application sets this in request; do we mess w/ this too?
+        # There is no default for width but one can be sent
         # self.request_body.setdefault("width", 1000)
 
         self._context = None
@@ -154,8 +154,8 @@ class SequenceDiagramDirective(Directive):
             source_filepath = os.path.join(self.env.srcdir,
                                            self.options["file"])
             try:
-                log.info("Reading sequence diagram from %s", source_filepath)
                 with open(source_filepath, 'r') as sequence_diagram_file:
+                    log.info("Reading sequence diagram from %s", source_filepath)
                     return sequence_diagram_file.read()
             except FileNotFoundError:
                 log.error("Could not read Sequence Diagram from file %s",
