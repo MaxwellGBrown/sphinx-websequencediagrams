@@ -16,6 +16,10 @@ from sphinx.util.osutil import ensuredir
 log = logging.getLogger(__name__)
 
 
+# The directive in .rst to activate a sequence diagram
+SEQUENCE_DIAGRAM_DIRECTIVE = "sequencediagram"
+
+
 class WebSequenceDiagram(object):
     """Manages interaction with www.websequencediagrams.com.
 
@@ -101,9 +105,10 @@ class SequenceDiagramDirective(Directive):
         the Sphinx Environment's `new_serialno`.
         """
         if not self._target_id:
-            self._target_id = "sequencediagram-{}-{}".format(
+            self._target_id = "{}-{}-{}".format(
+                SEQUENCE_DIAGRAM_DIRECTIVE,
                 os.path.basename(self.env.docname),
-                self.env.new_serialno('sequencediagram')
+                self.env.new_serialno(SEQUENCE_DIAGRAM_DIRECTIVE)
             )
         return self._target_id
 
@@ -203,7 +208,7 @@ def setup(app):
     app.add_config_value("include_sequencediagrams", True, "html")
 
     # custom directive for parsing ..sequencediagram:: from .rst
-    app.add_directive("sequencediagram", SequenceDiagramDirective)
+    app.add_directive(SEQUENCE_DIAGRAM_DIRECTIVE, SequenceDiagramDirective)
 
     # custom node for writing sequencediagram directive to HTML
     app.add_node(
