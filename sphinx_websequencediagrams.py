@@ -122,7 +122,19 @@ class SequenceDiagramDirective(Directive):
             filename,
         )
 
-    def ensure_build_images_dir(self):
+    @property
+    def src(self):
+        """Compose the node's src relative to it's parent document."""
+        relative_location = os.path.relpath(
+            self.env.srcdir,
+            os.path.dirname(self.env.doc2path(self.env.docname)),
+        )
+        return os.path.join(
+            relative_location,
+            os.path.relpath(self.build_filepath, self.env.app.outdir),
+        )
+
+    def _ensure_build_images_dir(self):
         """Ensure build directories for self.build_filepath exist.
 
         This will create directories that do not already exist in that path.
@@ -151,26 +163,17 @@ class SequenceDiagramDirective(Directive):
 
         log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
-            self.ensure_build_images_dir()
+            self._ensure_build_images_dir()
             with open(self.build_filepath, "wb") as source_diagram:
                 shutil.copyfileobj(http_diagram, source_diagram)
-
-        # Set src relative to build path & document build location
-        relative_location = os.path.relpath(
-            self.env.srcdir,
-            os.path.dirname(self.env.doc2path(self.env.docname)),
-        )
 
         # Create a "target_node" so we can link to this sequencediagram
         target_node = nodes.target("", "", ids=[self.target_id])
 
         node = sequencediagram()
-        node["src"] = os.path.join(
-            relative_location,
-            os.path.relpath(self.build_filepath, self.env.app.outdir),
-        )
-
+        node["src"] = self.src
         node["alt"] = self.options.get("alt", self.target_id)
+
         return [target_node, node]
 
 
