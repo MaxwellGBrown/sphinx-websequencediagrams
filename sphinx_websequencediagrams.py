@@ -68,8 +68,7 @@ class WebSequenceDiagram(object):
 class SequenceDiagramDirective(Directive):
     """Class that determines directive attributes, markup, & run results."""
 
-    # this enables content in the directive (wtf does that mean?)
-    has_content = True
+    has_content = True  # this enables content in the dierective
 
     option_spec = {
         "file": directives.path,
@@ -83,21 +82,30 @@ class SequenceDiagramDirective(Directive):
         "format": "png",
     }
 
+    @property
+    def env(self):
+        """Shortcut to self.state.document.settings.env.
+
+        This is the Sphinx runtime environment that is referenced for many
+        operations.
+        """
+        return self.state.document.settings.env
+
     def run(self):
         """Process an RST sequencediagram directive and return it's nodes."""
         self.options = {**self.default_options, **self.options}
 
-        env = self.state.document.settings.env
-
         # Create a "target_node" so we can link to this sequencediagram
         target_id = "sequencediagram-{}-{}".format(
-            os.path.basename(env.docname), env.new_serialno('sequencediagram')
+            os.path.basename(self.env.docname),
+            self.env.new_serialno('sequencediagram')
         )
         target_node = nodes.target("", "", ids=[target_id])
 
         # Create a sequence diagarm w/ the text in the directive
         if "file" in self.options:
-            source_filepath = os.path.join(env.srcdir, self.options["file"])
+            source_filepath = os.path.join(self.env.srcdir,
+                                           self.options["file"])
             try:
                 with open(source_filepath, 'r') as sequence_diagram_file:
                     text_diagram = sequence_diagram_file.read()
@@ -111,12 +119,12 @@ class SequenceDiagramDirective(Directive):
         node = sequencediagram()
 
         filename = "{}.{}".format(target_id, self.options["format"])
-        ensuredir(
-            os.path.join(env.app.builder.outdir, env.app.builder.imagedir)
-        )
+        build_image_dir = os.path.join(self.env.app.builder.outdir,
+                                       self.env.app.builder.imagedir)
+        ensuredir(build_image_dir)
         build_filepath = os.path.join(
-            env.app.builder.outdir,
-            env.app.builder.imagedir,
+            self.env.app.builder.outdir,
+            self.env.app.builder.imagedir,
             filename,
         )
 
@@ -127,14 +135,15 @@ class SequenceDiagramDirective(Directive):
 
         # Set src relative to build path & document build location
         relative_location = os.path.relpath(
-            env.srcdir, os.path.dirname(env.doc2path(env.docname))
+            self.env.srcdir,
+            os.path.dirname(self.env.doc2path(self.env.docname)),
         )
         node["src"] = os.path.join(
             relative_location,
-            os.path.relpath(build_filepath, env.app.outdir),
+            os.path.relpath(build_filepath, self.env.app.outdir),
         )
 
-        node["uri"] = os.path.relpath(build_filepath, env.app.outdir)
+        node["uri"] = os.path.relpath(build_filepath, self.env.app.outdir)
         node["alt"] = self.options.get("alt", target_id)
         return [target_node, node]
 
