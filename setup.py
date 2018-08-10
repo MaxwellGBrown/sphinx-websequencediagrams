@@ -13,7 +13,7 @@ tests_require = install_requires + [
 
 setup(
     name="sphinx-websequencediagrams",
-    version="0.3.1",
+    version="0.3.2",
     license="MIT",
     url="https://github.com/MaxwellGBrown/sphinx-websequencediagrams",
     description="Sphinx extension that integrates www.websequencediagrams.com",
