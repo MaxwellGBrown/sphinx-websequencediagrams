@@ -143,23 +143,32 @@ class SequenceDiagramDirective(Directive):
                                        self.env.app.builder.imagedir)
         ensuredir(build_image_dir)
 
-    def run(self):
-        """Process an RST sequencediagram directive and return it's nodes."""
-        self.options = {**self.default_options, **self.options}
+    def _read_contents(self):
+        """Read the contents of the directive.
 
-        # Create a sequence diagarm w/ the text in the directive
+        If :file: was supplied, read them from the specified file.
+
+        If :file: cannot be read, returns an empty string.
+        """
         if "file" in self.options:
             source_filepath = os.path.join(self.env.srcdir,
                                            self.options["file"])
             try:
+                log.info("Reading sequence diagram from %s", source_filepath)
                 with open(source_filepath, 'r') as sequence_diagram_file:
-                    text_diagram = sequence_diagram_file.read()
+                    return sequence_diagram_file.read()
             except FileNotFoundError:
                 log.error("Could not read Sequence Diagram from file %s",
                           self.options["file"])
-                return []
-        else:
-            text_diagram = "\n".join(self.content)
+                return ""
+
+        return "\n".join(self.content)
+
+    def run(self):
+        """Process an RST sequencediagram directive and return it's nodes."""
+        self.options = {**self.default_options, **self.options}
+
+        text_diagram = self._read_contents()
 
         log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
