@@ -82,6 +82,8 @@ class SequenceDiagramDirective(Directive):
         "format": "png",
     }
 
+    _target_id = ""  # See @property target_id
+
     @property
     def env(self):
         """Shortcut to self.state.document.settings.env.
@@ -91,16 +93,26 @@ class SequenceDiagramDirective(Directive):
         """
         return self.state.document.settings.env
 
+    @property
+    def target_id(self):
+        """Create or return this directive's `target_id`.
+
+        If one hasn't been created yet one is generated with the help of
+        the Sphinx Environment's `new_serialno`.
+        """
+        if not self._target_id:
+            self._target_id = "sequencediagram-{}-{}".format(
+                os.path.basename(self.env.docname),
+                self.env.new_serialno('sequencediagram')
+            )
+        return self._target_id
+
     def run(self):
         """Process an RST sequencediagram directive and return it's nodes."""
         self.options = {**self.default_options, **self.options}
 
         # Create a "target_node" so we can link to this sequencediagram
-        target_id = "sequencediagram-{}-{}".format(
-            os.path.basename(self.env.docname),
-            self.env.new_serialno('sequencediagram')
-        )
-        target_node = nodes.target("", "", ids=[target_id])
+        target_node = nodes.target("", "", ids=[self.target_id])
 
         # Create a sequence diagarm w/ the text in the directive
         if "file" in self.options:
@@ -118,7 +130,7 @@ class SequenceDiagramDirective(Directive):
 
         node = sequencediagram()
 
-        filename = "{}.{}".format(target_id, self.options["format"])
+        filename = "{}.{}".format(self.target_id, self.options["format"])
         build_image_dir = os.path.join(self.env.app.builder.outdir,
                                        self.env.app.builder.imagedir)
         ensuredir(build_image_dir)
@@ -144,7 +156,7 @@ class SequenceDiagramDirective(Directive):
         )
 
         node["uri"] = os.path.relpath(build_filepath, self.env.app.outdir)
-        node["alt"] = self.options.get("alt", target_id)
+        node["alt"] = self.options.get("alt", self.target_id)
         return [target_node, node]
 
 
