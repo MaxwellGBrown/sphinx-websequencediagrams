@@ -112,6 +112,25 @@ class SequenceDiagramDirective(Directive):
             )
         return self._target_id
 
+    @property
+    def build_filepath(self):
+        """Compose the output filepath of the generated sequence diagram."""
+        filename = "{}.{}".format(self.target_id, self.options["format"])
+        return os.path.join(
+            self.env.app.builder.outdir,
+            self.env.app.builder.imagedir,
+            filename,
+        )
+
+    def ensure_build_images_dir(self):
+        """Ensure build directories for self.build_filepath exist.
+
+        This will create directories that do not already exist in that path.
+        """
+        build_image_dir = os.path.join(self.env.app.builder.outdir,
+                                       self.env.app.builder.imagedir)
+        ensuredir(build_image_dir)
+
     def run(self):
         """Process an RST sequencediagram directive and return it's nodes."""
         self.options = {**self.default_options, **self.options}
@@ -135,19 +154,10 @@ class SequenceDiagramDirective(Directive):
 
         node = sequencediagram()
 
-        filename = "{}.{}".format(self.target_id, self.options["format"])
-        build_image_dir = os.path.join(self.env.app.builder.outdir,
-                                       self.env.app.builder.imagedir)
-        ensuredir(build_image_dir)
-        build_filepath = os.path.join(
-            self.env.app.builder.outdir,
-            self.env.app.builder.imagedir,
-            filename,
-        )
-
-        log.info("Downloading %s", build_filepath)
+        log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
-            with open(build_filepath, "wb") as source_diagram:
+            self.ensure_build_images_dir()
+            with open(self.build_filepath, "wb") as source_diagram:
                 shutil.copyfileobj(http_diagram, source_diagram)
 
         # Set src relative to build path & document build location
@@ -157,10 +167,10 @@ class SequenceDiagramDirective(Directive):
         )
         node["src"] = os.path.join(
             relative_location,
-            os.path.relpath(build_filepath, self.env.app.outdir),
+            os.path.relpath(self.build_filepath, self.env.app.outdir),
         )
 
-        node["uri"] = os.path.relpath(build_filepath, self.env.app.outdir)
+        node["uri"] = os.path.relpath(self.build_filepath, self.env.app.outdir)
         node["alt"] = self.options.get("alt", self.target_id)
         return [target_node, node]
 
