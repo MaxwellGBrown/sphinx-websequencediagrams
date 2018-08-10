@@ -155,7 +155,8 @@ class SequenceDiagramDirective(Directive):
                                            self.options["file"])
             try:
                 with open(source_filepath, 'r') as sequence_diagram_file:
-                    log.info("Reading sequence diagram from %s", source_filepath)
+                    log.info("Reading sequence diagram from %s",
+                             source_filepath)
                     return sequence_diagram_file.read()
             except FileNotFoundError:
                 log.error("Could not read Sequence Diagram from file %s",
@@ -169,6 +170,10 @@ class SequenceDiagramDirective(Directive):
         self.options = {**self.default_options, **self.options}
 
         text_diagram = self._read_contents()
+        if not text_diagram:
+            log.warning("No contents for sequence diagram %s in %s.",
+                        self.target_id, self.env.docname)
+            return []
 
         log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
