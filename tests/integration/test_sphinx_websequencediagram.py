@@ -5,6 +5,7 @@ import subprocess
 
 from bs4 import BeautifulSoup
 import pytest
+import sphinx
 
 
 pytestmark = [pytest.mark.integration]
@@ -32,7 +33,7 @@ def build_docs(request):
 
     def build_docs():
         """Build test sphinx documentation & return HTML of build."""
-        subprocess.call(['sphinx-build', SOURCE_PATH, BUILD_PATH])
+        sphinx.main(['sphinx-build', SOURCE_PATH, BUILD_PATH])
 
         build_file = os.path.join(BUILD_PATH, 'index.html')
         with open(build_file, 'r') as output_file:
