@@ -16,6 +16,10 @@ from sphinx.util.osutil import ensuredir
 log = logging.getLogger(__name__)
 
 
+# The directive in .rst to activate a sequence diagram
+SEQUENCE_DIAGRAM_DIRECTIVE = "sequencediagram"
+
+
 class WebSequenceDiagram(object):
     """Manages interaction with www.websequencediagrams.com.
 
@@ -36,7 +40,7 @@ class WebSequenceDiagram(object):
         self.request_body.setdefault("style", "default")
         self.request_body.setdefault("format", "png")
         self.request_body.setdefault("appVersion", "1")
-        # TODO The application sets this in request; do we mess w/ this too?
+        # There is no default for width but one can be sent
         # self.request_body.setdefault("width", 1000)
 
         self._context = None
@@ -68,14 +72,12 @@ class WebSequenceDiagram(object):
 class SequenceDiagramDirective(Directive):
     """Class that determines directive attributes, markup, & run results."""
 
-    # this enables content in the directive (wtf does that mean?)
-    has_content = True
+    has_content = True  # this enables content in the dierective
 
     option_spec = {
         "file": directives.path,
-        # TODO Discover the other style names
-        "style": lambda x: directives.choice(x, ("default", "forest")),
-        "format": lambda x: directives.choice(x, ("png", "svg", "pdf")),
+        "style": str,
+        "format": str,
         "alt": str,
     }
 
@@ -84,58 +86,108 @@ class SequenceDiagramDirective(Directive):
         "format": "png",
     }
 
+    _target_id = ""  # See @property target_id
+
+    @property
+    def env(self):
+        """Shortcut to self.state.document.settings.env.
+
+        This is the Sphinx runtime environment that is referenced for many
+        operations.
+        """
+        return self.state.document.settings.env
+
+    @property
+    def target_id(self):
+        """Create or return this directive's `target_id`.
+
+        If one hasn't been created yet one is generated with the help of
+        the Sphinx Environment's `new_serialno`.
+        """
+        if not self._target_id:
+            self._target_id = "{}-{}-{}".format(
+                SEQUENCE_DIAGRAM_DIRECTIVE,
+                os.path.basename(self.env.docname),
+                self.env.new_serialno(SEQUENCE_DIAGRAM_DIRECTIVE)
+            )
+        return self._target_id
+
+    @property
+    def build_filepath(self):
+        """Compose the output filepath of the generated sequence diagram."""
+        filename = "{}.{}".format(self.target_id, self.options["format"])
+        return os.path.join(
+            self.env.app.builder.outdir,
+            self.env.app.builder.imagedir,
+            filename,
+        )
+
+    @property
+    def src(self):
+        """Compose the node's src relative to it's parent document."""
+        relative_location = os.path.relpath(
+            self.env.srcdir,
+            os.path.dirname(self.env.doc2path(self.env.docname)),
+        )
+        return os.path.join(
+            relative_location,
+            os.path.relpath(self.build_filepath, self.env.app.outdir),
+        )
+
+    def _ensure_build_images_dir(self):
+        """Ensure build directories for self.build_filepath exist.
+
+        This will create directories that do not already exist in that path.
+        """
+        build_image_dir = os.path.join(self.env.app.builder.outdir,
+                                       self.env.app.builder.imagedir)
+        ensuredir(build_image_dir)
+
+    def _read_contents(self):
+        """Read the contents of the directive.
+
+        If :file: was supplied, read them from the specified file.
+
+        If :file: cannot be read, returns an empty string.
+        """
+        if "file" in self.options:
+            source_filepath = os.path.join(self.env.srcdir,
+                                           self.options["file"])
+            try:
+                with open(source_filepath, 'r') as sequence_diagram_file:
+                    log.info("Reading sequence diagram from %s",
+                             source_filepath)
+                    return sequence_diagram_file.read()
+            except FileNotFoundError:
+                log.error("Could not read Sequence Diagram from file %s",
+                          self.options["file"])
+                return ""
+
+        return "\n".join(self.content)
+
     def run(self):
         """Process an RST sequencediagram directive and return it's nodes."""
         self.options = {**self.default_options, **self.options}
 
-        env = self.state.document.settings.env
+        text_diagram = self._read_contents()
+        if not text_diagram:
+            log.warning("No contents for sequence diagram %s in %s.",
+                        self.target_id, self.env.docname)
+            return []
 
-        # Create a "target_node" so we can link to this sequencediagram
-        target_id = "sequencediagram-{}-{}".format(
-            os.path.basename(env.docname), env.new_serialno('sequencediagram')
-        )
-        target_node = nodes.target("", "", ids=[target_id])
-
-        # Create a sequence diagarm w/ the text in the directive
-        if "file" in self.options:
-            try:
-                with open(self.options["file"], 'r') as sequence_diagram_file:
-                    text_diagram = sequence_diagram_file.read()
-            except FileNotFoundError:
-                log.error("Could not read Sequence Diagram from file %s",
-                          self.options["file"])
-                return []
-        else:
-            text_diagram = "\n".join(self.content)
-
-        node = sequencediagram()
-
-        filename = "{}.{}".format(target_id, self.options["format"])
-        ensuredir(
-            os.path.join(env.app.builder.outdir, env.app.builder.imagedir)
-        )
-        build_filepath = os.path.join(
-            env.app.builder.outdir,
-            env.app.builder.imagedir,
-            filename,
-        )
-
-        log.info("Downloading %s", build_filepath)
+        log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
-            with open(build_filepath, "wb") as source_diagram:
+            self._ensure_build_images_dir()
+            with open(self.build_filepath, "wb") as source_diagram:
                 shutil.copyfileobj(http_diagram, source_diagram)
 
-        # Set src relative to build path & document build location
-        relative_location = os.path.relpath(
-            env.srcdir, os.path.dirname(env.doc2path(env.docname))
-        )
-        node["src"] = os.path.join(
-            relative_location,
-            os.path.relpath(build_filepath, env.app.outdir),
-        )
+        # Create a "target_node" so we can link to this sequencediagram
+        target_node = nodes.target("", "", ids=[self.target_id])
 
-        node["uri"] = os.path.relpath(build_filepath, env.app.outdir)
-        node["alt"] = self.options.get("alt", target_id)
+        node = sequencediagram()
+        node["src"] = self.src
+        node["alt"] = self.options.get("alt", self.target_id)
+
         return [target_node, node]
 
 
@@ -182,7 +234,7 @@ def setup(app):
     app.add_config_value("include_sequencediagrams", True, "html")
 
     # custom directive for parsing ..sequencediagram:: from .rst
-    app.add_directive("sequencediagram", SequenceDiagramDirective)
+    app.add_directive(SEQUENCE_DIAGRAM_DIRECTIVE, SequenceDiagramDirective)
 
     # custom node for writing sequencediagram directive to HTML
     app.add_node(
