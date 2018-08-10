@@ -73,9 +73,8 @@ class SequenceDiagramDirective(Directive):
 
     option_spec = {
         "file": directives.path,
-        # TODO Discover the other style names
-        "style": lambda x: directives.choice(x, ("default", "forest")),
-        "format": lambda x: directives.choice(x, ("png", "svg", "pdf")),
+        "style": str,
+        "format": str,
         "alt": str,
     }
 
