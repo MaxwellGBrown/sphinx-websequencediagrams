@@ -135,9 +135,6 @@ class SequenceDiagramDirective(Directive):
         """Process an RST sequencediagram directive and return it's nodes."""
         self.options = {**self.default_options, **self.options}
 
-        # Create a "target_node" so we can link to this sequencediagram
-        target_node = nodes.target("", "", ids=[self.target_id])
-
         # Create a sequence diagarm w/ the text in the directive
         if "file" in self.options:
             source_filepath = os.path.join(self.env.srcdir,
@@ -152,8 +149,6 @@ class SequenceDiagramDirective(Directive):
         else:
             text_diagram = "\n".join(self.content)
 
-        node = sequencediagram()
-
         log.info("Downloading %s", self.build_filepath)
         with WebSequenceDiagram(text_diagram, **self.options) as http_diagram:
             self.ensure_build_images_dir()
@@ -165,12 +160,16 @@ class SequenceDiagramDirective(Directive):
             self.env.srcdir,
             os.path.dirname(self.env.doc2path(self.env.docname)),
         )
+
+        # Create a "target_node" so we can link to this sequencediagram
+        target_node = nodes.target("", "", ids=[self.target_id])
+
+        node = sequencediagram()
         node["src"] = os.path.join(
             relative_location,
             os.path.relpath(self.build_filepath, self.env.app.outdir),
         )
 
-        node["uri"] = os.path.relpath(self.build_filepath, self.env.app.outdir)
         node["alt"] = self.options.get("alt", self.target_id)
         return [target_node, node]
 
