@@ -242,4 +242,4 @@ def setup(app):
         html=(visit_sequencediagram_node, depart_sequencediagram_node),
     )
 
-    return {'version': '0.0'}  # Identify version of the extension in return
+    return {'version': '0.3.2'}
