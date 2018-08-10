@@ -10,7 +10,7 @@ Setup
 
    ::
    
-     pip install git+https://github.com/MaxwellGBrown/sphinx-websequencediagrams
+     pip install sphinx-websequencediagrams
 
 
 #. Update your sphinx ``conf.py`` to include the package
