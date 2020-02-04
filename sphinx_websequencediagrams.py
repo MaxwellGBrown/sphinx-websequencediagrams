@@ -27,7 +27,7 @@ class WebSequenceDiagram(object):
     api are made correctly, and that the responses are read into an io stream.
     """
 
-    _api_url = "http://www.websequencediagrams.com/"
+    _api_url = "https://www.websequencediagrams.com/"
 
     class WebSequenceDiagramError(Exception):
         """Exception for any errors returned by www.websequencediagrams.com."""
