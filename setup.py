@@ -7,13 +7,13 @@ install_requires = [
 ]
 tests_require = install_requires + [
     "beautifulsoup4==4.6.1",
-    "pytest==3.3.1",
+    "pytest==5.3.5",
     "Sphinx==1.6.5",
 ]
 
 setup(
     name="sphinx-websequencediagrams",
-    version="0.3.3",
+    version="0.3.4",
     license="MIT",
     url="https://github.com/MaxwellGBrown/sphinx-websequencediagrams",
     description="Sphinx extension that integrates www.websequencediagrams.com",
