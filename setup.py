@@ -7,7 +7,7 @@ install_requires = [
 ]
 tests_require = install_requires + [
     "beautifulsoup4==4.6.1",
-    "pytest==3.3.1",
+    "pytest==5.3.5",
     "Sphinx==1.6.5",
 ]
 
